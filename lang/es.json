@@ -1,0 +1,42 @@
+{
+    "noAuthorizationHeader": {
+        "code": "noAuthorizationHeader",
+        "message": "Tu petición no tiene cabecera de autorización"
+    },
+    "UserNotFound": {
+        "code": "UserNotFound",
+        "message": "El usuario no existe en el sistema"
+    },
+    "UserAlreadyExists": {
+        "code": "UserAlreadyExists",
+        "message": "El usuario ya se encuentra registrado"
+    },
+    "SavingError": {
+        "code": "SavingError",
+        "message": "Failed to save"
+    },
+    "UpdatingError": {
+        "code": "UpdatingError",
+        "message": "Failed to update"
+    },
+    "EmailSent": {
+        "code": "EmailSent",
+        "message": "Correo enviado con éxito"
+    },
+    "OrderSent": {
+        "code": "OrderSent",
+        "message": "Order sent successfully"
+    },
+    "Saved": {
+        "code": "Saved",
+        "message": "Record saved"
+    },
+    "Updated": {
+        "code": "Updated",
+        "message": "Record updated"
+    },
+    "ForgetPasswordChangedSuccess": {
+        "code": "ForgetPasswordChangedSuccess",
+        "message": "Se ha enviado la nueva contraseña al correo asociado"
+    }
+}
