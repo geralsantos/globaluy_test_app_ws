@@ -25,7 +25,7 @@ const middleware = (type, req, auth = false) => {
 						})
 						.catch((response) => {
 							params.code = response.code;
-							params.status = 400;
+							params.status = 401;
 							params.error = response.message || 'Token not found';
 							reject(params);
 						});

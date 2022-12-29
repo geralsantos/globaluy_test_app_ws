@@ -10,7 +10,7 @@ require("dotenv").config();
 
 function createToken(user) {
 	const payload = {
-		exp: moment().add(1, "days").unix(),
+		exp: moment().add(365, "days").unix(),
 		sub: user.id,
 		profile: user.rol_id,
 		name: user.full_name,
@@ -76,17 +76,17 @@ function enviarCorreo(to, subject, text, html = false) {
 		const promise = new Promise((resolve, reject) => {
 			transporter.sendMail(mailOptions, (error, response) => {
 				if (error) {
-					console.log(error);
+					
 					reject({});
 				} else {
 					resolve({});
-					console.log(response);
+					
 				}
 			});
 		});
 		return promise;
 	} catch (error) {
-		console.log(error, "err");
+		
 	}
 }
 function multerDiskStorage(dest = "", filename_ = "") {

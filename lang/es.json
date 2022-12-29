@@ -27,6 +27,10 @@
         "code": "OrderSent",
         "message": "Order sent successfully"
     },
+    "OrderProcessed": {
+        "code": "OrderProcessed",
+        "message": "Order processed successfully"
+    },
     "Saved": {
         "code": "Saved",
         "message": "Record saved"

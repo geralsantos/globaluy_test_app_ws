@@ -53,6 +53,34 @@ class InterfaceProducts {
 		});
 		return promise;
 	}
+	getAllProducts() {
+		let promise = null;
+		let params = {},
+			result = {};
+
+		promise = new Promise(async (resolve, reject) => {
+			Product.findAll({
+				where: { stock: { [Op.gt]: 0 } },
+			})
+				.then(function (response) {
+					if (response == null) {
+						params.code = "0003";
+						params.status = 400;
+						params.error = "error";
+						reject(params);
+					}
+					result.response = response;
+					resolve(result);
+				})
+				.catch(function (err) {
+					params.code = "0003";
+					params.status = 400;
+					params.error = err.message;
+					reject(params);
+				});
+		});
+		return promise;
+	}
 	updateProductAvailable({ product_id, company_id, quantity }) {
 		let promise = null;
 		let params = {},
@@ -92,16 +120,33 @@ class InterfaceProducts {
 		});
 		return promise;
 	}
-	getOrders({ user_id, company_id }) {
+	getOrders({ user_id, rol_id }) {
 		let promise = null;
 		let params = {},
 			result = {};
 
 		promise = new Promise(async (resolve, reject) => {
+			let company_user = await CompanyUser.findOne({
+				where: { user_id: user_id },
+			});
+			if (!company_user) {
+				params.code = "0003";
+				params.status = 400;
+				params.error = "Company user not found";
+				reject(params);
+			}
+			let order_where = { company_id: company_user.company_id };
+			if (rol_id != 2) {
+				order_where.user_id = user_id;
+			}
 			Order.findAll({
-				where: { company_id: company_id, user_id: user_id },
+				where: order_where,
+				order: [['id','desc']],
 				include: [
-					{ model: User, attributes: ["id", "full_name", "user_code"] },
+					{
+						model: User,
+						attributes: ["id", "rol_id", "email", "full_name", "user_code"],
+					},
 				],
 			})
 				.then(function (response) {
@@ -212,30 +257,39 @@ class InterfaceProducts {
 		});
 		return promise;
 	}
-	sendOrder({ products, company_id, user_id }) {
+	sendOrder({ products, user_id }) {
 		let promise = null;
 		let params = {},
 			result = {};
 		promise = new Promise(async (resolve, reject) => {
 			const t = await sequelize.transaction();
 			try {
+				let company_user = await CompanyUser.findOne({
+					where: { user_id: user_id },
+				});
+				if (!company_user) {
+					params.code = "0003";
+					params.status = 400;
+					params.error = "Company user not found";
+					reject(params);
+				}
 				const order_created = await Order.create(
 					{
-						company_id: company_id,
+						company_id: company_user.company_id,
 						user_id: user_id,
 						date_created: utils.getDateTime("yyyy-MM-dd hh:mm:ss"),
 						status: 1,
 					},
 					{ transaction: t }
 				);
-
 				for (let index = 0; index < products.length; index++) {
 					const product = products[index];
+
 					const order_detail_created = await OrderDetail.create(
 						{
 							order_id: order_created.id,
 							product_id: product.product_id,
-							quantity: product.quantity,
+							quantity: product.qty,
 							status: 1,
 						},
 						{ transaction: t }
@@ -253,7 +307,88 @@ class InterfaceProducts {
 				await t.commit();
 				resolve(result);
 			} catch (error) {
-				console.log("error", error);
+				
+				await t.rollback();
+				reject(params);
+			}
+		});
+		return promise;
+	}
+	processOrder({ order_id, user_id }) {
+		let promise = null;
+		let params = {},
+			result = {};
+		promise = new Promise(async (resolve, reject) => {
+			const t = await sequelize.transaction();
+			try {
+				Order.findOne({
+					where: { id: order_id, status: 1 },
+				})
+					.then(async function (order) {
+						if (order == null) {
+							params.code = "0003";
+							params.status = 400;
+							params.error = "Order not found";
+							reject(params);
+						}
+						const updated = order.update(
+							{
+								status: 2, //approved
+							},
+							{ transaction: t }
+						);
+						if (!updated) {
+							params.code = "0003";
+							params.status = 400;
+							params.error = lang.UpdatingError.message;
+							await t.rollback();
+							reject(params);
+						}
+						const arr_order_detail = await OrderDetail.findAll({
+							where: { order_id: order.id },
+						});
+						for (let index = 0; index < arr_order_detail.length; index++) {
+							const order_detail = arr_order_detail[index];
+							const company_product = await CompanyProduct.findOne({
+								where: {
+									product_id: order_detail.product_id,
+									company_id: order.company_id,
+								},
+							});
+							if (!company_product) {
+								params.code = "0003";
+								params.status = 400;
+								params.error = lang.UpdatingError.message;
+								await t.rollback();
+								reject(params);
+							}
+							const updated_company_product = await company_product.update(
+								{
+									quantity: company_product.quantity + order_detail.quantity,
+								},
+								{ transaction: t }
+							);
+							if (!updated_company_product) {
+								params.code = "0003";
+								params.status = 400;
+								params.error = lang.UpdatingError.message;
+								await t.rollback();
+								reject(params);
+							}
+						}
+						result.message = lang.OrderProcessed.message;
+						result.response = order;
+						await t.commit();
+						resolve(result);
+					})
+					.catch(function (err) {
+						params.code = "0003";
+						params.status = 400;
+						params.error = err.message;
+						reject(params);
+					});
+			} catch (error) {
+				
 				await t.rollback();
 				reject(params);
 			}

@@ -32,7 +32,7 @@ const Order = OrderModel(sequelize, Sequelize);
 const OrderDetail = OrderDetailModel(sequelize, Sequelize);
 
 // sequelize.sync({ force: false }).then(() => {
-// 	console.log("Tablas sincronizadas");
+// 	
 // });
 
 module.exports = {

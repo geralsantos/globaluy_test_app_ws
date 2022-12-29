@@ -7,9 +7,26 @@ const product = {
 		request
 			.middleware("POST", req, true)
 			.then((response) => {
-				console.log("response.user", response.response.user);
+				
 				new InterfaceProducts()
 					.getProductsAvailables(response.response.user)
+					.then((response) => {
+						return res.status(200).send(response);
+					})
+					.catch((err) => {
+						return res.status(200).send(err);
+					});
+			})
+			.catch((err) => {
+				return res.status(err.status).send(err);
+			});
+	},
+	getAllProducts: (req, res) => {
+		request
+			.middleware("POST", req, true)
+			.then((response) => {
+				new InterfaceProducts()
+					.getAllProducts(response.response.user)
 					.then((response) => {
 						return res.status(200).send(response);
 					})
@@ -46,10 +63,10 @@ const product = {
 		request
 			.middleware("POST", req, true)
 			.then((response) => {
-				console.log("response.user", response.response.user);
+				
 				new InterfaceProducts()
 					.getOrders({
-						company_id: req.body.company_id,
+						rol_id: response.response.user.profile,
 						user_id: response.response.user.sub,
 					})
 					.then((response) => {
@@ -67,7 +84,7 @@ const product = {
 		request
 			.middleware("POST", req, true)
 			.then((response) => {
-				console.log("response.user", response.response.user);
+				
 				new InterfaceProducts()
 					.getOrdersCompany({
 						user_id: response.response.user.sub,
@@ -88,7 +105,7 @@ const product = {
 		request
 			.middleware("POST", req, true)
 			.then((response) => {
-				console.log("response.user", response.response.user);
+				
 				new InterfaceProducts()
 					.getOrderDetail({
 						user_id: response.response.user.sub,
@@ -112,8 +129,8 @@ const product = {
 				new InterfaceProducts()
 					.sendOrder({
 						user_id: response.response.user.sub,
-						company_id: req.body.company_id,
-						products: req.body.products,
+						// company_id: req.body.company_id,
+						products: JSON.parse(req.body.products),
 					})
 					.then((response) => {
 						return res.status(200).send(response);
@@ -126,6 +143,27 @@ const product = {
 				return res.status(err.status).send(err);
 			});
 	},
+	processOrder: (req, res) => {
+		request
+			.middleware("POST", req, true)
+			.then((response) => {
+				new InterfaceProducts()
+					.processOrder({
+						user_id: response.response.user.sub,
+						order_id: req.body.order_id,
+					})
+					.then((response) => {
+						return res.status(200).send(response);
+					})
+					.catch((err) => {
+						return res.status(200).send(err);
+					});
+			})
+			.catch((err) => {
+				return res.status(err.status).send(err);
+			});
+	},
+	
 	
 	// cambiarEstado: (req, res) => {
 	// 	request

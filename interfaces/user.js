@@ -7,7 +7,7 @@ const constant = require(`../util/constants`);
 const utils = require("../util/utils");
 
 const service = require("../services");
-const { User } = require("../database");
+const {sequelize, User, CompanyUser } = require("../database");
 
 class InterfaceUser {
 	signinUser(email, password) {
@@ -32,7 +32,7 @@ class InterfaceUser {
 					} else {
 						const hash = bcrypt.compareSync(password, user.get("password"));
 						if (hash) {
-							result.response = {user, token: service.createToken(user)} ;
+							result.response = { user, token: service.createToken(user) };
 							//token = service.createToken(user);
 							resolve(result);
 						} else {
@@ -52,25 +52,37 @@ class InterfaceUser {
 		});
 		return promise;
 	}
-	register(valores) {
+	signup(valores) {
 		let promise = null;
 		let params = {},
 			result = {};
 
-		promise = new Promise((resolve, reject) => {
-			if (!valores.name || !valores.email || !valores.password) {
+		promise = new Promise(async (resolve, reject) => {
+			const t = await sequelize.transaction();
+			if (!valores.full_name || !valores.email || !valores.password) {
 				params.code = "0003";
 				params.status = 401;
 				params.error = lang.SavingError.message;
 				reject(params);
 			}
 			User.findOne({ where: { email: valores.email } })
-				.then(function (user) {
+				.then(async function (user) {
 					if (user) {
-						params.code = "0003";
-						params.status = 401;
-						params.error = lang.UserAlreadyExists.message;
-						reject(params);
+						const validPassword = await bcrypt.compare(
+							valores.password,
+							user.password
+						);
+						if (validPassword) {
+							params.code = "0003";
+							params.status = 401;
+							params.error = lang.UserAlreadyExists.message;
+							reject(params);
+						} else {
+							params.code = "0003";
+							params.status = 400;
+							params.error = lang.SavingError.message;
+							reject(params);
+						}
 					} else {
 						bcrypt.hash(
 							valores.password,
@@ -78,30 +90,33 @@ class InterfaceUser {
 							async function (err, hash) {
 								if (err) {
 									params.code = "0003";
-									params.status = 401;
+									params.status = 400;
 									params.error = lang.SavingError.message;
 									reject(params);
 								} else {
 									const user = await User.create({
-										name: valores.name,
-										lastname: valores.lastname,
-										birthday: valores.birthday,
-										telephone: valores.telephone,
-										patent: valores.patent,
-										genre: valores.genre,
+										rol_id: valores.rol_id,
+										full_name: valores.full_name,
 										email: valores.email,
 										password: hash,
-										fecha_creacion: utils.getDateTime("yyyy-MM-dd"),
-									});
-									if (user) {
-										result.response = user;
-										resolve(result);
-									} else {
+									},{ transaction: t });
+									if (!user) {
 										params.code = "0003";
-										params.status = 401;
+										params.status = 400;
 										params.error = lang.SavingError.message;
+										await t.rollback();
 										reject(params);
 									}
+									user.update({
+										user_code: "EMP-" + user.id,
+									},{ transaction: t });
+									const company_user = await CompanyUser.create({
+										company_id: 1,
+										user_id: user.id,
+									},{ transaction: t });
+									result.response = user;
+									await t.commit();
+									resolve(result);
 								}
 							}
 						);
@@ -109,7 +124,7 @@ class InterfaceUser {
 				})
 				.catch(function (err) {
 					params.code = "0003";
-					params.status = 401;
+					params.status = 500;
 					params.error = err.message;
 					reject(params);
 				});
@@ -137,9 +152,7 @@ class InterfaceUser {
 							newpassword,
 							config.bcrypt_salt_rounds
 						);
-						let text =
-							"Su nueva contraseña es: " +
-							newpassword;
+						let text = "Su nueva contraseña es: " + newpassword;
 
 						service
 							.enviarCorreo(to, subject, text)
@@ -148,7 +161,7 @@ class InterfaceUser {
 									password: hash,
 									fecha_modificacion: utils.getDateTime("yyyy-MM-dd hh:mm:ss"),
 								});
-								console.log("yes2", userupdated);
+								
 								if (userupdated) {
 									result.response = {
 										status: "success",
@@ -163,7 +176,7 @@ class InterfaceUser {
 								}
 							})
 							.catch((err) => {
-								console.log("no4", err.message);
+								
 
 								params.code = "0003";
 								params.status = 401;

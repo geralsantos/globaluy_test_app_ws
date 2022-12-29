@@ -27,12 +27,12 @@ const auth = {
 				return res.status(200).send(err);
 			});
 	},
-	register: (req, res) => {
+	signup: (req, res) => {
 		request
 			.middleware("POST", req, false)
 			.then((response) => {
 				new InterfaceUser()
-					.register(req.body)
+					.signup(req.body)
 					.then((response) => {
 						return res.status(200).send(response);
 					})
