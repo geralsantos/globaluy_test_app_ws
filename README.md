@@ -1,7 +1,7 @@
 SERVICE BACKGROUND IN SYSTEMD.SERVICE
-- /etc/systemd/system/redgps_ws.service
+- /etc/systemd/system/globaluy_ws.service
 comandos después de definir el service
 # systemctl daemon-reload
-# systemctl enable redgps_ws.service
-# systemctl start redgps_ws.service
-# systemctl restart redgps_ws.service
+# systemctl enable globaluy_ws.service
+# systemctl start globaluy_ws.service
+# systemctl restart globaluy_ws.service
